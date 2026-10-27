@@ -1,0 +1,1 @@
+plugins/modules/record.py validate-modules:missing-gplv3-license # MIT licensed

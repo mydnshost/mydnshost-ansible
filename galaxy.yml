@@ -1,0 +1,18 @@
+namespace: mydnshost
+name: dns
+version: 0.1.0
+readme: README.md
+authors:
+  - Shane Mc Cormack <shanemcc@gmail.com>
+description: Manage DNS records on MyDNSHost.
+license:
+  - MIT
+tags:
+  - dns
+  - networking
+dependencies: {}
+repository: https://github.com/mydnshost/mydnshost-ansible
+issues: https://github.com/mydnshost/mydnshost-ansible/issues
+build_ignore:
+  - .git
+  - tests/output

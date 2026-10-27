@@ -1,0 +1,145 @@
+---
+# Exercises the record module and role against a real API. Run against a
+# throwaway domain, as it adds and removes records under test-ansible.<domain>:
+#
+#   ansible-playbook tests/integration/records.yml -e test_domain=test.example \
+#     -e mydnshost_api_url=https://api.dev.mydnshost.co.uk/ \
+#     -e mydnshost_auth_user=admin@example.com -e mydnshost_auth_key=...
+#
+# Any mydnshost_* vars left unset fall back to the MYDNSHOST_* environment variables.
+- name: Test mydnshost.dns
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  module_defaults:
+    group/mydnshost.dns.mydnshost:
+      api_url: "{{ mydnshost_api_url | default(omit) }}"
+      auth_user: "{{ mydnshost_auth_user | default(omit) }}"
+      auth_key: "{{ mydnshost_auth_key | default(omit) }}"
+  vars:
+    test_name: "test-ansible.{{ test_domain }}"
+  tasks:
+    - name: Start clean
+      mydnshost.dns.record:
+        name: "{{ test_name }}"
+        type: "{{ item }}"
+        state: absent
+      loop: [A, MX]
+
+    - name: Add A records (check mode)
+      mydnshost.dns.record:
+        name: "{{ test_name }}"
+        type: A
+        values: [192.0.2.1, 192.0.2.2]
+        ttl: 300
+      check_mode: true
+      diff: true
+      register: r
+
+    - name: Check mode predicted a change without making one
+      ansible.builtin.assert:
+        that:
+          - r is changed
+          - r.records | length == 2
+          - r.records | selectattr('id', 'defined') | list | length == 0
+
+    - name: Add A records
+      mydnshost.dns.record:
+        name: "{{ test_name }}"
+        type: A
+        values: [192.0.2.1, 192.0.2.2]
+        ttl: 300
+      register: r
+
+    - name: Records were created
+      ansible.builtin.assert:
+        that:
+          - r is changed
+          - r.serial is defined
+          - r.records | map(attribute='content') | sort == ['192.0.2.1', '192.0.2.2']
+          - r.records | map(attribute='ttl') | unique == [300]
+
+    - name: Add A records again
+      mydnshost.dns.record:
+        name: "{{ test_name }}"
+        type: A
+        values: [192.0.2.1, 192.0.2.2]
+        ttl: 300
+      register: r
+
+    - name: Second run is idempotent
+      ansible.builtin.assert:
+        that: r is not changed
+
+    - name: Add a value non-exclusively
+      mydnshost.dns.record:
+        name: "{{ test_name }}"
+        type: A
+        value: 192.0.2.3
+      register: r
+
+    - name: Existing values were kept
+      ansible.builtin.assert:
+        that: r.records | map(attribute='content') | sort == ['192.0.2.1', '192.0.2.2', '192.0.2.3']
+
+    - name: Replace the set exclusively and change TTL
+      mydnshost.dns.record:
+        name: "{{ test_name }}"
+        type: A
+        values: [192.0.2.2]
+        ttl: 600
+        exclusive: true
+      diff: true
+      register: r
+
+    - name: Only the listed value remains
+      ansible.builtin.assert:
+        that:
+          - r is changed
+          - r.records | length == 1
+          - r.records[0].content == '192.0.2.2'
+          - r.records[0].ttl == 600
+
+    - name: Manage MX records via the role
+      ansible.builtin.include_role:
+        name: mydnshost.dns.records
+      vars:
+        mydnshost_records:
+          - name: "{{ test_name }}"
+            type: MX
+            values: [10 mx1.example.com., 20 mx2.example.com]
+            exclusive: true
+
+    - name: MX records with trailing dots are idempotent
+      mydnshost.dns.record:
+        name: "{{ test_name }}"
+        type: MX
+        values: [10 mx1.example.com, 20 mx2.example.com.]
+        exclusive: true
+      register: r
+
+    - name: No change
+      ansible.builtin.assert:
+        that:
+          - r is not changed
+          - r.records | map(attribute='priority') | sort == [10, 20]
+
+    - name: Remove one A value
+      mydnshost.dns.record:
+        name: "{{ test_name }}"
+        type: A
+        value: 192.0.2.2
+        state: absent
+      register: r
+
+    - name: A records are gone
+      ansible.builtin.assert:
+        that:
+          - r is changed
+          - r.records == []
+
+    - name: Clean up MX
+      mydnshost.dns.record:
+        name: "{{ test_name }}"
+        type: MX
+        state: absent

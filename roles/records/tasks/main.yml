@@ -1,0 +1,21 @@
+---
+- name: Manage MyDNSHost records
+  mydnshost.dns.record:
+    name: "{{ item.name }}"
+    type: "{{ item.type }}"
+    # item.values would be the dict method, hence the subscript.
+    values: "{{ item['values'] | default(omit) }}"
+    ttl: "{{ item.ttl | default(omit) }}"
+    exclusive: "{{ item.exclusive | default(omit) }}"
+    state: "{{ item.state | default(omit) }}"
+    domain: "{{ item.domain | default(omit) }}"
+    api_url: "{{ mydnshost_api_url | default(omit) }}"
+    auth_user: "{{ mydnshost_auth_user | default(omit) }}"
+    auth_key: "{{ mydnshost_auth_key | default(omit) }}"
+    domain_key: "{{ mydnshost_domain_key | default(omit) }}"
+  loop: "{{ mydnshost_records }}"
+  loop_control:
+    label: "{{ item.name }} {{ item.type }}"
+  delegate_to: localhost
+  become: false
+  run_once: "{{ mydnshost_records_run_once }}"

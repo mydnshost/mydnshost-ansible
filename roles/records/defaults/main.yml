@@ -1,0 +1,17 @@
+---
+# Records to manage. Each entry takes the same options as mydnshost.dns.record:
+#   name, type, values, ttl, exclusive, state, domain
+mydnshost_records: []
+
+# Run the record tasks once for the play rather than once per host. Set this
+# when every host applies the same records, otherwise parallel identical adds
+# can race and create duplicates.
+mydnshost_records_run_once: false
+
+# Connection settings. Anything left unset falls back to the module's
+# environment variables (MYDNSHOST_API_URL, MYDNSHOST_AUTH_USER,
+# MYDNSHOST_AUTH_KEY, MYDNSHOST_DOMAIN_KEY).
+# mydnshost_api_url:
+# mydnshost_auth_user:
+# mydnshost_auth_key:
+# mydnshost_domain_key:

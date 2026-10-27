@@ -1,0 +1,7 @@
+---
+exclude_paths:
+  - tests/output/
+skip_list:
+  # Role vars use the mydnshost_ prefix rather than the role name (records_).
+  - var-naming[no-role-prefix]
+  - galaxy[no-changelog]

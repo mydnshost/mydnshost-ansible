@@ -1,0 +1,54 @@
+---
+argument_specs:
+  main:
+    short_description: Manage a list of MyDNSHost records
+    description:
+      - Applies each entry of O(mydnshost_records) using the mydnshost.dns.record module, delegated to localhost.
+    options:
+      mydnshost_records:
+        description: Records to manage. Each entry takes the same options as mydnshost.dns.record.
+        type: list
+        elements: dict
+        default: []
+        options:
+          name:
+            description: Record name, fully qualified or relative to domain.
+            type: str
+            required: true
+          type:
+            description: Record type.
+            type: str
+            required: true
+          values:
+            description: Record values. Priority types (MX, SRV, SVCB, HTTPS) start with the priority.
+            type: list
+            elements: str
+          ttl:
+            description: TTL in seconds.
+            type: int
+          exclusive:
+            description: Remove any other values for this name and type.
+            type: bool
+          state:
+            description: Whether the values should be present or absent.
+            type: str
+            choices: [present, absent]
+          domain:
+            description: The domain the record belongs to. Found automatically if not set.
+            type: str
+      mydnshost_records_run_once:
+        description: Run the record tasks once per play rather than once per host.
+        type: bool
+        default: false
+      mydnshost_api_url:
+        description: Base URL of the API.
+        type: str
+      mydnshost_auth_user:
+        description: Username to authenticate with, used with mydnshost_auth_key.
+        type: str
+      mydnshost_auth_key:
+        description: User API key.
+        type: str
+      mydnshost_domain_key:
+        description: Domain key. Each record entry then needs a domain.
+        type: str
